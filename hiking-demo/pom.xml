@@ -11,12 +11,23 @@
     <name>hikr</name>
 
     <properties>
+        <version.thorntail>2.2.0.Final</version.thorntail>
+        <version.mysql>8.0.12</version.mysql>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.thorntail</groupId>
+                <artifactId>bom-all</artifactId>
+                <version>${version.thorntail}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -26,24 +37,15 @@
             <version>7.0</version>
             <scope>provided</scope>
         </dependency>
-      <dependency>
-            <groupId>com.github.valdr</groupId>
-            <artifactId>valdr-bean-validation</artifactId>
-            <version>1.1.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.hibernate</groupId>
-                    <artifactId>hibernate-validator</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
-                </exclusion>
-            </exclusions>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${version.mysql}</version>
         </dependency>
     </dependencies>
 
     <build>
+        <finalName>hikr</finalName>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
@@ -64,26 +66,18 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>io.thorntail</groupId>
+                <artifactId>thorntail-maven-plugin</artifactId>
+                <version>${version.thorntail}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>package</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-war-plugin</artifactId>
-                    <version>3.2.0</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
-
-    <profiles>
-        <profile>
-            <id>openshift</id>
-            <build>
-                <finalName>ROOT</finalName>
-            </build>
-        </profile>
-
-    </profiles>
 </project>

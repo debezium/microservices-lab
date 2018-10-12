@@ -38,12 +38,20 @@ This uses the https://github.com/openshift-s2i/s2i-wildfly[WildFly S2I] ("source
 
 [source,sh]
 ----
-$ oc new-app --name=hikingapp openshift/wildfly-140-centos7:latest~https://github.com/debezium/microservices-lab.git \
+$ oc new-app --name=hikingapp fabric8/s2i-java:latest~https://github.com/debezium/microservices-lab \
     --context-dir=hiking-demo \
-    -e MYSQL_DATABASE=inventory \
-    -e MYSQL_PASSWORD=mysqlpw \
-    -e MYSQL_USER=mysqluser \
-    -e MYSQL_DATASOURCE=HikingDS
+    -e AB_PROMETHEUS_OFF=true \
+    -e JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true
+----
+
+We still need to expose port 8080 for the application and set up a route for it
+(as that's not done automatically by the S2I builder image).
+To do so, use `oc patch` and expose a route for the service like so:
+
+[source,sh]
+----
+$ oc patch service hikingapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
+
 $ oc expose svc hikingapp
 ----
 

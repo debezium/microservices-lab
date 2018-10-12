@@ -5,13 +5,4 @@
     version="3.0"
 >
 
-    <servlet>
-        <servlet-name>valdr</servlet-name>
-        <servlet-class>com.github.valdr.ValidationRulesServlet</servlet-class>
-    </servlet>
-
-    <servlet-mapping>
-        <servlet-name>valdr</servlet-name>
-        <url-pattern>/webresources/validation</url-pattern>
-    </servlet-mapping>
 </web-app>

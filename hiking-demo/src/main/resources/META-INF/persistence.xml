@@ -7,7 +7,7 @@
 	<persistence-unit name="hike-PU-JTA" transaction-type="JTA">
 		<jta-data-source>java:jboss/datasources/HikingDS</jta-data-source>
 		<properties>
-			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQL57Dialect"/>
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5Dialect"/>
 			<property name="hibernate.hbm2ddl.auto" value="create"/>
 		</properties>
 	</persistence-unit>
