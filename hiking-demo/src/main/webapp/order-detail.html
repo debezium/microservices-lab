@@ -1,0 +1,49 @@
+<form name="orderForm" class="form-horizontal" role="form" novalidate ng-submit="save()" valdr-enabled="true">
+
+  <div valdr-type="ExternalOrder">
+
+  <!-- Customer -->
+  <div class="form-group" ng-class="{ 'has-error' : orderForm.customer.$invalid && !orderForm.customer.$pristine }" valdr-form-group>
+    <label for="inputCustomer" class="col-sm-2 control-label">Customer</label>
+    <div class="col-sm-6">
+      <input type="text" class="form-control" name="customer" id="inputCustomer" placeholder="Customer" ng-model="order.customer" required>
+     </div>
+     <div class="col-sm-4">
+      <p ng-show="orderForm.customer.$invalid && !orderForm.customer.$pristine" class="help-block">{{ orderForm.customer.valdrViolations[0].message }}</p>
+     </div>
+  </div>
+
+  <!-- Payment -->
+  <div class="form-group" ng-class="{ 'has-error' : orderForm.payment.$invalid && !orderForm.payment.$pristine }" valdr-form-group>
+    <label for="inputPayment" class="col-sm-2 control-label">Payment</label>
+    <div class="col-sm-6">
+      <input type="text" class="form-control" name="payment" id="inputPayment" placeholder="Payment" ng-model="order.payment" required>
+     </div>
+     <div class="col-sm-4">
+      <p ng-show="orderForm.payment.$invalid && !orderForm.payment.$pristine" class="help-block">{{ orderForm.payment.valdrViolations[0].message }}</p>
+     </div>
+  </div>
+
+  <!-- Event -->
+  <div class="form-group">
+    <label for="inputEvent" class="col-sm-2 control-label">Event</label>
+    <div class="col-sm-3">
+      <select class="form-control" data-ng-model="order.event.id" id="inputEvent" data-ng-options="e.id as e.name for e in events" required>
+        <option value=""> - Select Event - </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="form-group">
+    <div class="col-md-offset-2 col-sm-1">
+      <button class="btn btn-primary" type="submit" ng-disabled="orderForm.$invalid">Save</button>
+    </div>
+    <div class="col-sm-9">
+      <button class="btn btn-default" ng-click="cancel()">Cancel</button>
+    </div>
+  </div>
+
+  </div>
+
+</form>

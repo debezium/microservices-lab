@@ -1,0 +1,26 @@
+version: '2'
+services:
+  mysql:
+    image: debezium/example-mysql:${DEBEZIUM_VERSION}
+    ports:
+     - 3306:3306
+    environment:
+     - MYSQL_ROOT_PASSWORD=debezium
+     - MYSQL_USER=mysqluser
+     - MYSQL_PASSWORD=mysqlpw
+  hikingapp:
+    image: debezium/hiking-demo:${DEBEZIUM_VERSION}
+    build:
+      context: .
+    ports:
+     - 8079:8079
+    links:
+     - mysql
+    environment:
+     - JAVA_APP_JAR=hikr-thorntail.jar
+     - "JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true -Dswarm.http.port=8079"
+     - AB_PROMETHEUS_OFF=true
+    command: >
+      /bin/bash -c "
+        java -jar /deployments/hikr-thorntail.jar -Djava.net.preferIPv4Stack=true -Dswarm.http.port=8079
+      "

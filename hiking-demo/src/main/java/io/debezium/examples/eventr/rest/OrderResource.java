@@ -1,5 +1,6 @@
 package io.debezium.examples.eventr.rest;
 
+import java.util.Date;
 import java.util.List;
 
 import javax.enterprise.context.RequestScoped;
@@ -12,6 +13,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
@@ -21,15 +23,16 @@ import io.debezium.examples.eventr.repository.OrderRepository;
 
 @RequestScoped
 @Path("/orders")
-@Produces("application/json")
-@Consumes("application/json")
 public class OrderResource {
 
     @Inject
     private OrderRepository repository;
 
     @POST
+    @Produces("application/json")
+    @Consumes("application/json")
     public Response create(final Order order) {
+        order.setDate(new Date());
         repository.create(order);
         return Response
                 .created(UriBuilder.fromResource(OrderResource.class).path(String.valueOf(order.getId())).build())
@@ -38,6 +41,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id:[0-9][0-9]*}")
+    @Produces("application/json")
     public Response findById(@PathParam("id") final int id) {
         final Order order = repository.getById(id);
         if (order == null) {
@@ -47,19 +51,29 @@ public class OrderResource {
     }
 
     @GET
-    public List<Order> listAll() {
-        return repository.getAll();
+    @Produces("application/json")
+    public List<Order> findHikes(@QueryParam("q") String searchTerm) {
+        if (searchTerm != null) {
+            return repository.getByCustomerOrEventName(searchTerm);
+        }
+        else {
+            return repository.getAll();
+        }
     }
 
     @PUT
     @Path("/{id:[0-9][0-9]*}")
+    @Produces("application/json")
+    @Consumes("application/json")
     public Response update(@PathParam("id") int id, final Order order) {
+        order.setDate(new Date());
         repository.save(order);
         return Response.noContent().build();
     }
 
     @DELETE
     @Path("/{id:[0-9][0-9]*}")
+    @Produces("application/json")
     public Response deleteById(@PathParam("id") final int id) {
         repository.delete(id);
         return Response.noContent().build();
@@ -67,6 +81,7 @@ public class OrderResource {
 
     @GET
     @Path("/event/{id:[0-9][0-9]*}")
+    @Produces("application/json")
     public List<Order> listByEvent(@PathParam("id") int eventId) {
         return repository.getByEventId(eventId);
     }

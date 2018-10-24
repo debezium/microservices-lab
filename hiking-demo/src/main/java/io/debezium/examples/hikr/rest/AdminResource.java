@@ -1,6 +1,8 @@
 package io.debezium.examples.hikr.rest;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import javax.ejb.Stateless;
@@ -10,6 +12,8 @@ import javax.persistence.PersistenceContext;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import io.debezium.examples.eventr.model.Event;
+import io.debezium.examples.eventr.model.Order;
 import io.debezium.examples.hikr.model.Hike;
 import io.debezium.examples.hikr.model.Person;
 import io.debezium.examples.hikr.model.Section;
@@ -88,6 +92,38 @@ public class AdminResource {
 		semiMarathon.organizer = new Person( "Association Paris Versailles" );
 		semiMarathon.price = 5;
 		hikeEm.persist( semiMarathon );
+
+		Event event1 = new Event();
+		event1.setName("Spruce Bringsteen Live");
+		event1.setPrice(new BigDecimal("59.99"));
+		event1.setDate(new Date(2019, 2, 23));
+		hikeEm.persist(event1);
+
+		Event event2 = new Event();
+		event2.setName("Cedric Hapton In Concert");
+		event2.setPrice(new BigDecimal("49.99"));
+		event2.setDate(new Date(2019, 3, 21));
+		hikeEm.persist(event2);
+
+		Event event3 = new Event();
+		event3.setName("Conny Fresh Prison Rock");
+		event3.setPrice(new BigDecimal("69.99"));
+		event3.setDate(new Date(2019, 5, 9));
+		hikeEm.persist(event3);
+
+		Order order1 = new Order();
+		order1.setDate(new Date());
+		order1.setEvent(event1);
+		order1.setPayment(new BigDecimal("59.99"));
+		order1.setCustomer("Bob Smith");
+		hikeEm.persist(order1);
+
+		Order order2 = new Order();
+		order2.setDate(new Date());
+		order2.setEvent(event2);
+		order2.setPayment(new BigDecimal("49.99"));
+		order2.setCustomer("Berta Muller ");
+		hikeEm.persist(order1);
 	}
 
 	private void clearHikeAndTrips(EntityManager em) {

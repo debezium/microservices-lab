@@ -1,6 +1,6 @@
 angular
 
-    .module('hikesApp', ['ngRoute', 'restangular', 'valdr'])
+    .module('eventsApp', ['ngRoute', 'restangular', 'valdr'])
 
     .config(function(RestangularProvider) {
         RestangularProvider.setBaseUrl('hiking-manager');
@@ -9,16 +9,12 @@ angular
     .config(function($routeProvider) {
         $routeProvider
             .when('/', {
-                controller:'HikesCtrl',
-                templateUrl:'list.html'
+                controller:'OrdersCtrl',
+                templateUrl:'orders-list.html'
             })
             .when('/new', {
                 controller:'DetailCtrl',
                 templateUrl:'detail.html'
-            })
-            .when('/eventr/event/new', {
-                controller:'EventDetailCtrl',
-                templateUrl:'/eventr/event-detail.html'
             })
             .when('/edit/:hikeId', {
                 controller:'EditCtrl',
@@ -27,6 +23,14 @@ angular
             .when('/orders', {
                 controller: 'OrdersCtrl',
                 templateUrl:'orders-list.html'
+            })
+            .when('/orders/new', {
+                controller:'OrderDetailCtrl',
+                templateUrl:'order-detail.html'
+            })
+            .when('/orders/edit/:orderId', {
+                controller:'OrderEditCtrl',
+                templateUrl:'order-detail.html'
             })
             .when('/trips/:tripId', {
                 controller: 'TripDetailCtrl',
@@ -45,6 +49,7 @@ angular
         var hikesResource = Restangular.all('hikes');
         var tripsResource = Restangular.all('trips');
         var ordersResource = Restangular.all('orders');
+        var eventsResource = Restangular.all('events');
 
         return {
             getHikes: function(searchTerm) {
@@ -73,11 +78,28 @@ angular
             deleteHike: function(hike) {
                 return Restangular.one('hikes', hike.id).remove();
             },
-            getOrders: function() {
-                return ordersResource.getList();
+            getOrder: function(order) {
+                return Restangular.one('orders', order).get();
+            },
+            getOrders: function(searchTerm) {
+                if(searchTerm) {
+                    return ordersResource.getList({ q: searchTerm });
+                }
+                else {
+                    return ordersResource.getList();
+                }
             },
             createOrder: function(order) {
                 return ordersResource.post(order);
+            },
+            updateOrder: function(order) {
+                return order.put();
+            },
+            deleteOrder: function(order) {
+                return Restangular.one('orders', order.id).remove();
+            },
+            getEvents: function() {
+                return eventsResource.getList();
             }
         }
     }])
@@ -99,24 +121,6 @@ angular
     })
 
     .controller('DetailCtrl', function($scope,  $location, PersistenceService) {
-        PersistenceService.getTrips().then(function (trips) {
-            $scope.trips = trips;
-        });
-
-        $scope.hike = { sections: [] };
-
-        $scope.save = function() {
-            PersistenceService.createHike($scope.hike).then(function (hike) {
-                $location.path('/');
-            });
-        };
-
-        $scope.cancel = function() {
-            $location.path('/');
-        };
-    })
-
-    .controller('EventDetailCtrl', function($scope,  $location, PersistenceService) {
         PersistenceService.getTrips().then(function (trips) {
             $scope.trips = trips;
         });
@@ -181,7 +185,7 @@ angular
 
     .controller('OrdersCtrl', function($scope, $location, PersistenceService) {
         $scope.getOrders = function() {
-            PersistenceService.getOrders().then(function (orders) {
+            PersistenceService.getOrders($scope.searchTerm).then(function (orders) {
                 $scope.orders = orders;
             });
         };
@@ -190,12 +194,51 @@ angular
                 $location.path('/orders');
             });
         };
-        $scope.remove = function(hike) {
-            PersistenceService.deleteHike(hike).then(function (hike) {
-                $scope.getHikes();
+        $scope.remove = function(order) {
+            PersistenceService.deleteOrder(order).then(function (order) {
+                $scope.getOrders();
             });
         };
         $scope.getOrders();
+    })
+
+    .controller('OrderDetailCtrl', function($scope,  $location, PersistenceService) {
+        PersistenceService.getEvents().then(function (events) {
+            $scope.events = events;
+        });
+
+        $scope.order = {};
+
+        $scope.save = function() {
+            PersistenceService.createOrder($scope.order).then(function (order) {
+                $location.path('/orders');
+            });
+        };
+
+        $scope.cancel = function() {
+            $location.path('/orders');
+        };
+    })
+    .controller('OrderEditCtrl', function($scope,  $location, $routeParams, PersistenceService) {
+        $scope.order;
+
+        PersistenceService.getEvents().then(function (events) {
+            $scope.events = events;
+        });
+
+        PersistenceService.getOrder($routeParams.orderId).then(function (order) {
+            $scope.order = order;
+        });
+
+        $scope.save = function() {
+            PersistenceService.updateOrder($scope.order).then(function (order) {
+                $location.path('/orders');
+            });
+        };
+
+        $scope.cancel = function() {
+            $location.path('/orders');
+        };
     })
 
     .run(function($rootScope) {

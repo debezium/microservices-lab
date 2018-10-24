@@ -29,6 +29,9 @@ public class Order implements Serializable {
     @Column(name = "ID")
     private int id;
 
+    @Column(name = "CUSTOMER")
+    private String customer;
+
     @NotNull
     @Column(name = "ORDER_DATE")
     @Temporal(TemporalType.DATE)
@@ -41,7 +44,7 @@ public class Order implements Serializable {
 
     @NotNull
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name="EVENT_ID", nullable = false, updatable = false)
+    @JoinColumn(name="EVENT_ID", nullable = false, updatable = true)
     private Event event;
 
     public Order() {
@@ -54,6 +57,14 @@ public class Order implements Serializable {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(String customer) {
+        this.customer = customer;
     }
 
     public Date getDate() {
