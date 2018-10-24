@@ -16,6 +16,10 @@ angular
                 controller:'DetailCtrl',
                 templateUrl:'detail.html'
             })
+            .when('/eventr/event/new', {
+                controller:'EventDetailCtrl',
+                templateUrl:'/eventr/event-detail.html'
+            })
             .when('/edit/:hikeId', {
                 controller:'EditCtrl',
                 templateUrl:'detail.html'
@@ -95,6 +99,24 @@ angular
     })
 
     .controller('DetailCtrl', function($scope,  $location, PersistenceService) {
+        PersistenceService.getTrips().then(function (trips) {
+            $scope.trips = trips;
+        });
+
+        $scope.hike = { sections: [] };
+
+        $scope.save = function() {
+            PersistenceService.createHike($scope.hike).then(function (hike) {
+                $location.path('/');
+            });
+        };
+
+        $scope.cancel = function() {
+            $location.path('/');
+        };
+    })
+
+    .controller('EventDetailCtrl', function($scope,  $location, PersistenceService) {
         PersistenceService.getTrips().then(function (trips) {
             $scope.trips = trips;
         });
