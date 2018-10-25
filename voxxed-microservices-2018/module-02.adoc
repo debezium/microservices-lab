@@ -1,9 +1,135 @@
 == Using the Kafka API to exchange data between two microservices
 
-In this part of the workshop we're going to use the Kafka Java APIs (producer, consumer) to propagate data from one microservice to another.
+In this part of the workshop we're going to use the Kafka to propagate data from one microservice to another.
 
-TODO: Pull in required steps here.
+You'll learn the following things:
 
-For now, see ticket-msa/order/README.md and ticket-msa/invoice/README.md.
+* Sending messages to Kafka
+* Receiving messages from Kafka
 
-TODO: Remove steps below.
+=== Setting Up the Producer Application
+
+The producer application receives orders for given events via a REST API.
+It persists the orders in a MySQL database and emits a message for each placed order to Kafka.
+For doing so, it's using the https://github.com/aerogear/kafka-cdi[Kafka CDI] portable extension,
+which allows to obtain a message producer via dependency injection.
+Of course, the plain Kafka API could be used equally well.
+
+Emitting messages to Kafka will allow other services, e.g. an invoicing service to react to each created order.
+
+Start a MySQL instance by running:
+
+[source, sh]
+$ oc new-app --name=mysql debezium/example-mysql:0.8
+$ oc set env dc/mysql MYSQL_ROOT_PASSWORD=debezium MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
+
+Then build and start the application.
+This uses the https://github.com/fabric8/s2i-java[Fabric8 S2I] ("source to image") builder image which will fetch the application's source code from the given location, build it using Maven and then run the Thorntail uber JAR:
+
+[source,sh]
+----
+$ oc new-app --name=order-msa fabric8/s2i-java:latest~https://github.com/debezium/microservices-lab \
+    --context-dir=ticket-msa/order \
+    -e MYSQL_DATABASE=inventory \
+    -e AB_PROMETHEUS_OFF=true \
+    -e KAFKA_SERVICE_HOST=my-cluster-kafka-bootstrap \
+    -e KAFKA_SERVICE_PORT=9092 \
+    -e JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true \
+    -e ORDER_TOPIC_NAME=myorders
+----
+
+Next we need to expose port 8080 for the service:
+
+[source,sh]
+$ oc patch service order-msa -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
+$ oc expose svc order-msa
+
+It's also a good idea to convert the application's build into an "incremental build",
+which will avoid refetching all dependencies from remote Maven repostories after the first build:
+
+[source,sh]
+$ oc patch bc/order-msa -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+
+Once the application and its database are running (use `oc get pods` to verify),
+you can place "orders" by submitting requests like this to the application's REST API:
+
+[source]
+----
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -X POST -s -w "\n" \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://order-msa:8080/rest/orders -d @- <<'EOF'
+{
+    "firstName":"John",
+    "lastName":"Doe",
+    "email":"john.doe@example.com",
+    "price":1000
+}
+EOF
+----
+
+The reply should contain the id generated for the order.
+We also can examine that it has been persisted in the database.
+To do so, open a shell on the database's pod and log into MySQL:
+
+[source,sh]
+----
+$ oc rsh $(oc get pods -o name -l app=mysql)
+$ mysql -u $MYSQL_USER  -p$MYSQL_PASSWORD inventory
+# In the MySQL shell:
+# select * from MSA_ORDER;
+# exit
+exit
+----
+
+At the same time, a corresponding message should have been produced to Kafka.
+Let's take a look at the topic using the console consumer coming with Kafka:
+
+[source,sh]
+----
+$ oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+   --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+   --from-beginning \
+   --property print.key=true \
+   --topic myorders
+----
+
+=== Setting Up the Consumer Application
+
+Once order messages arrive in the "myorders" topic, it's time to set up another service, invoice,
+which will receive the messages using Kafka's consumer API.
+
+The steps are the same as above, only that we're building the invoice application this time:
+
+[source,sh]
+----
+$ oc new-app --name=invoice-msa fabric8/s2i-java:latest~https://github.com/debezium/microservices-lab \
+    --context-dir=ticket-msa/invoice \
+    -e AB_PROMETHEUS_OFF=true \
+    -e KAFKA_SERVICE_HOST=my-cluster-kafka-bootstrap \
+    -e KAFKA_SERVICE_PORT=9092 \
+    -e JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true \
+    -e ORDER_TOPIC_NAME=myorders
+
+$ oc patch service invoice-msa -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
+
+$ oc expose svc invoice-msa
+
+$ oc patch bc/invoice-msa -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+----
+
+Once the example application has started, it will simply logs each order message it receives.
+Send another POST request to the order service as shown above.
+Then take a look at the logs of the invoice application:
+
+[source,sh]
+----
+oc logs $(oc get pods -o name -l app=invoice-msa)
+----
+
+You should see messages like this:
+
+[source]
+----
+2018-10-25 07:17:08,412 INFO  [io.debezium.examples.ticketmsa.invoice.InvoiceService] (EE-ManagedExecutorService-default-Thread-1) Order event '{"id":7,"firstName":"John","lastName":"Doe","email":"john.doe@example.com","price":1000}' arrived
+----
