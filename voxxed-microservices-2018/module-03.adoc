@@ -24,7 +24,7 @@ image::debezium-demo.png[debezium-demo]
 
 === Setting Up the Example Application
 
-We've prepared a small https://github.com/debezium/microservices-lab/tree/master/hiking-demo[CRUD microservice for managing orders of events], which we'll use in the following as source of data change events.
+We've prepared a small https://github.com/debezium/microservices-lab/tree/master/eventr[CRUD microservice for managing orders of events], which we'll use in the following as source of data change events.
 It is based on https://thorntail.io/[Thorntail], an approach for building microservices using Java EE and MicroProfile, and uses MySQL as its database.
 
 Start a MySQL instance by running:
@@ -39,7 +39,7 @@ This uses the https://github.com/fabric8/s2i-java[Fabric8 S2I] ("source to image
 [source,sh]
 ----
 $ oc new-app --name=eventrapp fabric8/s2i-java:latest~https://github.com/debezium/microservices-lab \
-    --context-dir=hiking-demo \
+    --context-dir=eventr \
     -e AB_PROMETHEUS_OFF=true \
     -e JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true
 ----

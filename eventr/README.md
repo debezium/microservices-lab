@@ -6,9 +6,13 @@ Used as an example for streaming changes out of a database using Debezium.
 To run the app, follow these steps:
 
     mvn clean package
-    docker-compose up --build
+    docker build --no-cache -t debezium-examples/eventr:latest -f Dockerfile .
 
-Then visit the application in a browser at http://localhost:8079/.
+    docker run -it --rm --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw debezium/example-mysql:0.8
+
+    docker run -it --rm -p 8080:8080 --link mysql debezium-examples/eventr:latest
+
+Then visit the application in a browser at http://localhost:8080/hikr-1.0-SNAPSHOT/hikes.html.
 
 ## Deployment on OpenShift
 
@@ -17,12 +21,12 @@ Then visit the application in a browser at http://localhost:8079/.
     oc env dc/mysql MYSQL_ROOT_PASSWORD=debezium  MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
 
     # Build a WildFly image with the application
-    oc new-app --name=myapp wildfly~https://github.com/debezium/microservices-lab.git \
-        --context-dir=eventr \
+    oc new-app --name=myapp wildfly~https://github.com/strimzi/strimzi-lab.git \
+        --context-dir=eventr-demo \
         -e MYSQL_DATABASE=inventory \
         -e MYSQL_PASSWORD=mysqlpw \
         -e MYSQL_USER=mysqluser \
         -e MYSQL_DATASOURCE=OrderDS
     oc expose svc myapp
 
-Then visit the application in a browser at http://myapp-myproject.<OS_IP>.nip.io/.
+Then visit the application in a browser at http://myapp-myproject.<OS_IP>.nip.io/hikr-1.0-SNAPSHOT/hikes.html/.

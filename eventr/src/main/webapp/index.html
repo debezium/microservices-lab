@@ -1,0 +1,51 @@
+<html ng-app="eventsApp">
+    <head>
+        <title>EventR - CRUD demo app for placing event orders</title>
+
+        <meta charset="utf8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+    </head>
+
+    <body>
+        <script type="text/javascript" src="js/lib/angular.js"></script>
+        <script type="text/javascript" src="js/lib/angular-route.js"></script>
+        <script type="text/javascript" src="js/lib/lodash.compat.min.js"></script>
+        <script type="text/javascript" src="js/lib/restangular.js"></script>
+        <script type="text/javascript" src="js/lib/valdr.js"></script>
+        <script type="text/javascript" src="js/config.js"></script>
+
+        <div class="container">
+
+        <div class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">EventR</a>
+          </div>
+          <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li ng-class="{active: controller == 'OrdersCtrl'}"><a href="#/orders">Search orders</a></li>
+              <li ng-class="{active: controller == 'OrderDetailCtrl'}"><a href="#/orders/new">New order</a></li>
+              <li ng-class="{invisible: controller != 'OrderEditCtrl', active: controller == 'OrderEditCtrl'}"><a href="#">Edit order</a></li>
+              <li><a href="/order-manager/admin/populate/">Populate data</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </div>
+
+  <div class="row">
+    <div class="col-md-12" ng-view></div>
+  </div>
+</div>
+
+</body>
+</html>
