@@ -5,7 +5,9 @@
  */
 package io.debezium.examples.hikr.aggregation.connect;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Date;
 
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -232,10 +234,14 @@ public class KafkaConnectSchemaFactoryWrapper extends SchemaFactoryWrapper {
                     || beanProperty.getType().getRawClass() == float[].class
                     || beanProperty.getType().getRawClass() == Float[].class) {
                 connectType = "float";
-            } else if (beanProperty.getType().getRawClass() == double.class
+            }
+            else if (beanProperty.getType().getRawClass() == double.class
                     || beanProperty.getType().getRawClass() == Double.class
                     || beanProperty.getType().getRawClass() == double[].class
                     || beanProperty.getType().getRawClass() == Double[].class) {
+                connectType = "double";
+            }
+            else if (beanProperty.getType().getRawClass() == BigDecimal.class) {
                 connectType = "double";
             }
             // TODO BigDecimal -> Decimal via custom annotation for specifying scale
@@ -338,6 +344,9 @@ public class KafkaConnectSchemaFactoryWrapper extends SchemaFactoryWrapper {
             if (beanProperty.getType().getRawClass() == LocalDate.class) {
                 connectType = "int32";
                 name = "io.debezium.time.Timestamp";
+            }
+            else if (beanProperty.getType().getRawClass() == Date.class) {
+                connectType = "string";
             }
             else {
                 throw new UnsupportedOperationException("Property of unsupported type: " + beanProperty);

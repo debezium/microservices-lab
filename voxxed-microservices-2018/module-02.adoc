@@ -94,6 +94,8 @@ $ oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --topic myorders
 ----
 
+Once done, hit Ctrl + C to exit the console consumer.
+
 === Setting Up the Consumer Application
 
 Once order messages arrive in the "myorders" topic, it's time to set up another service, invoice,

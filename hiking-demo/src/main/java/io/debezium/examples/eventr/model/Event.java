@@ -6,12 +6,9 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -20,28 +17,25 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Entity
-@Table(name = "EVENTR_EVENT")
+@Table(name = "EventrEvent")
 public class Event implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy= GenerationType.AUTO)
-    @Column(name = "ID")
     private int id;
 
     @NotNull
-    @Column(name = "NAME")
     @Size(min = 1, max = 128)
     private String name;
 
     @NotNull
-    @Column(name = "EVENT_DATE")
+    @Column(name = "event_date")
     @Temporal(TemporalType.DATE)
     private Date date;
 
     @NotNull
-    @Column(name = "PRICE")
     @DecimalMin("0")
     private BigDecimal price;
 

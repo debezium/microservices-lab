@@ -24,7 +24,7 @@ image::debezium-demo.png[debezium-demo]
 
 === Setting Up the Example Application
 
-We've prepared a small https://github.com/debezium/microservices-lab/tree/master/hiking-demo[CRUD microservice for managing hikes], which we'll use in the following as source of data change events.
+We've prepared a small https://github.com/debezium/microservices-lab/tree/master/hiking-demo[CRUD microservice for managing orders of events], which we'll use in the following as source of data change events.
 It is based on https://thorntail.io/[Thorntail], an approach for building microservices using Java EE and MicroProfile, and uses MySQL as its database.
 
 Start a MySQL instance by running:
@@ -38,7 +38,7 @@ This uses the https://github.com/fabric8/s2i-java[Fabric8 S2I] ("source to image
 
 [source,sh]
 ----
-$ oc new-app --name=hikingapp fabric8/s2i-java:latest~https://github.com/debezium/microservices-lab \
+$ oc new-app --name=eventrapp fabric8/s2i-java:latest~https://github.com/debezium/microservices-lab \
     --context-dir=hiking-demo \
     -e AB_PROMETHEUS_OFF=true \
     -e JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true
@@ -50,9 +50,9 @@ To do so, use `oc patch` and expose a route for the service like so:
 
 [source,sh]
 ----
-$ oc patch service hikingapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
+$ oc patch service eventrapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
 
-$ oc expose svc hikingapp
+$ oc expose svc eventrapp
 ----
 
 Verify that the pods of the database and the application are running:
@@ -68,8 +68,8 @@ Once the build has completed, you should see the following status
 
 [source,sh]
 NAME                                          READY     STATUS    RESTARTS   AGE
-hikingapp-1-build                             0/1       Completed   0          2m
-hikingapp-1-m4rss                             1/1       Running     0          39s
+eventrapp-1-build                             0/1       Completed   0          2m
+eventrapp-1-m4rss                             1/1       Running     0          39s
 mysql-2-gk8nw                                 1/1       Running     0          2m
 ...
 
@@ -78,19 +78,19 @@ you can make the build an https://access.redhat.com/documentation/en-us/openshif
 
 [source,sh]
 ----
-$ oc patch bc/hikingapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
-buildconfig "hikingapp" patched
+$ oc patch bc/eventrapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+buildconfig "eventrapp" patched
 ----
 
-The hostname of the exposed hikingapp service is available in the OpenShift console, or can be retrieved via CLI:
+The hostname of the exposed eventrapp service is available in the OpenShift console, or can be retrieved via CLI:
 
 [source]
-$ oc get routes hikingapp -o=jsonpath='{.spec.host}{"\n"}'
+$ oc get routes eventrapp -o=jsonpath='{.spec.host}{"\n"}'
 
-Note the output, which should be in the format hikingapp-voxxed.<YOUR SERVER IP>.nip.io and you can navigate there using a browser.
+Note the output, which should be in the format eventrapp-voxxed.<YOUR SERVER IP>.nip.io and you can navigate there using a browser.
 Alternatively, you could click on the application's URL within the OpenShift web UI.
 
-You can use "Populate Data" to create some example data (Click on "Search hikes" after that to see the created entries).
+You can use "Populate Data" to create some example data (Click on "Search orders" after that to see the created entries).
 Otherwise just insert a few records as you like.
 
 === Setting Up Kafka Connect With the Debezium Connectors
@@ -191,7 +191,7 @@ Once that's the case, register an instance of the Debezium MySQL connector using
 
 [source]
 ----
-$ oc exec -i my-cluster-kafka-0 -- curl -s -X POST \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -s -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors -d @- <<'EOF'
@@ -234,16 +234,17 @@ You can examine CDC messages in Kafka using the console consumer (use Ctrl + C t
 
 [source]
 ----
-$ oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+$ oc exec -c kafka -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --bootstrap-server my-cluster-kafka-bootstrap:9092 \
    --from-beginning \
    --property print.key=true \
-   --topic Hike
+   --topic EventrOrder
 ----
 
-The topic name follows the pattern "<db server name>.<db name>.<table name>".
+Note that by default topic names follow the pattern "<db server name>.<db name>.<table name>".
+By means of the `RegexRouter` in the connector configuration we've changed that so that the topic name is just the unqualified table name.
 You should see messages comprising of a key and a value like the following (formatted for the sake readability),
-representing the `Hike` records as per the initial snapshot.
+representing the `Order` records as per the initial snapshot.
 
 Key:
 
@@ -254,13 +255,13 @@ Key:
         "type": "struct",
         "fields": [
             {
-                "type": "int64",
+                "type": "int32",
                 "optional": false,
                 "field": "id"
             }
         ],
         "optional": false,
-        "name": "dbserver1.inventory.Hike.Key"
+        "name": "dbserver1.inventory.EventrOrder.Key"
     },
     "payload": {
         "id": 4
@@ -280,56 +281,82 @@ Value:
                 "type": "struct",
                 "fields": [
                     {
-                        "type": "int64",
+                        "type": "int32",
                         "optional": false,
                         "field": "id"
                     },
                     {
                         "type": "string",
-                        "optional": false,
-                        "field": "destination"
-                    },
-                    {
-                        "type": "string",
-                        "optional": false,
-                        "field": "start"
-                    },
-                    {
-                        "type": "int64",
                         "optional": true,
-                        "field": "recommendedTrip_id"
+                        "field": "customer"
+                    },
+                    {
+                        "type": "int32",
+                        "optional": false,
+                        "name": "io.debezium.time.Date",
+                        "version": 1,
+                        "field": "order_date"
+                    },
+                    {
+                        "type": "bytes",
+                        "optional": false,
+                        "name": "org.apache.kafka.connect.data.Decimal",
+                        "version": 1,
+                        "parameters": {
+                            "scale": "2",
+                            "connect.decimal.precision": "19"
+                        },
+                        "field": "payment"
+                    },
+                    {
+                        "type": "int32",
+                        "optional": false,
+                        "field": "event_id"
                     }
                 ],
                 "optional": true,
-                "name": "dbserver1.inventory.Hike.Value",
+                "name": "dbserver1.inventory.EventrOrder.Value",
                 "field": "before"
             },
             {
                 "type": "struct",
                 "fields": [
                     {
-                        "type": "int64",
+                        "type": "int32",
                         "optional": false,
                         "field": "id"
                     },
                     {
                         "type": "string",
-                        "optional": false,
-                        "field": "destination"
-                    },
-                    {
-                        "type": "string",
-                        "optional": false,
-                        "field": "start"
-                    },
-                    {
-                        "type": "int64",
                         "optional": true,
-                        "field": "recommendedTrip_id"
+                        "field": "customer"
+                    },
+                    {
+                        "type": "int32",
+                        "optional": false,
+                        "name": "io.debezium.time.Date",
+                        "version": 1,
+                        "field": "order_date"
+                    },
+                    {
+                        "type": "bytes",
+                        "optional": false,
+                        "name": "org.apache.kafka.connect.data.Decimal",
+                        "version": 1,
+                        "parameters": {
+                            "scale": "2",
+                            "connect.decimal.precision": "19"
+                        },
+                        "field": "payment"
+                    },
+                    {
+                        "type": "int32",
+                        "optional": false,
+                        "field": "event_id"
                     }
                 ],
                 "optional": true,
-                "name": "dbserver1.inventory.Hike.Value",
+                "name": "dbserver1.inventory.EventrOrder.Value",
                 "field": "after"
             },
             {
@@ -395,6 +422,11 @@ Value:
                         "type": "string",
                         "optional": true,
                         "field": "table"
+                    },
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "field": "query"
                     }
                 ],
                 "optional": false,
@@ -413,32 +445,34 @@ Value:
             }
         ],
         "optional": false,
-        "name": "dbserver1.inventory.Hike.Envelope"
+        "name": "dbserver1.inventory.EventrOrder.Envelope"
     },
     "payload": {
         "before": null,
         "after": {
             "id": 4,
-            "destination": "Yovimpa Pass",
-            "start": "Rainbow Point",
-            "recommendedTrip_id": 2
+            "customer": "Bob Smith",
+            "order_date": 17829,
+            "payment": "F28=",
+            "event_id": 1
         },
         "source": {
             "version": "0.8.3.Final",
             "name": "dbserver1",
-            "server_id": 0,
-            "ts_sec": 0,
+            "server_id": 223344,
+            "ts_sec": 1540457930,
             "gtid": null,
             "file": "mysql-bin.000003",
-            "pos": 6196,
+            "pos": 101280,
             "row": 0,
-            "snapshot": true,
-            "thread": null,
+            "snapshot": false,
+            "thread": 182,
             "db": "inventory",
-            "table": "Hike"
+            "table": "EventrOrder",
+            "query": null
         },
         "op": "c",
-        "ts_ms": 1524146925953
+        "ts_ms": 1540457964571
     }
 }
 ----
@@ -460,7 +494,7 @@ Using the Kafka Connect REST API, you also can query the list of connectors, que
 [source]
 ----
 # List all connectors
-$ oc exec -i my-cluster-kafka-0 -- curl -w "\n" -s -X GET \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -w "\n" -s -X GET \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors
@@ -469,7 +503,7 @@ $ oc exec -i my-cluster-kafka-0 -- curl -w "\n" -s -X GET \
 [source]
 ----
 # Get status of "inventory-connector"
-$ oc exec -i my-cluster-kafka-0 -- curl -w "\n" -s -X GET \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -w "\n" -s -X GET \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors/inventory-connector/status
@@ -478,7 +512,7 @@ $ oc exec -i my-cluster-kafka-0 -- curl -w "\n" -s -X GET \
 [source]
 ----
 # Delete "inventory-connector" (don't run it, as we'll still need the connector in the following)
-$ oc exec -i my-cluster-kafka-0 -- curl -w "\n" -s -X DELETE \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -w "\n" -s -X DELETE \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors/inventory-connector
@@ -513,7 +547,7 @@ Once the database has started (use `oc get pods` to verify that Postgres is runn
 
 [source]
 ----
-$ oc exec -i my-cluster-kafka-0 -- curl -X POST \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -s -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors -d @- <<'EOF'
@@ -522,7 +556,7 @@ $ oc exec -i my-cluster-kafka-0 -- curl -X POST \
     "config": {
         "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
         "tasks.max": "1",
-        "topics": "Hike",
+        "topics": "EventrOrder",
         "connection.url": "jdbc:postgresql://postgresql-95-centos7:5432/inventory?user=postgresuser&password=postgrespw",
         "transforms": "unwrap",
         "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
@@ -536,7 +570,7 @@ EOF
 ----
 
 This sets up an an instance of `io.confluent.connect.jdbc.JdbcSinkConnector`,
-listening to the `dbserver1.inventory.Hike` and streaming all data changes to the given database connection.
+listening to the `EventrOrder` topic and streaming all data changes to the given database connection.
 As this sink connector just expects the effective state of changed rows
 (i.e. the "after" part from the Debezium data change messages),
 only this part is extracted using Debezium's `UnwrapFromEnvelope` SMT (single message transform).
@@ -553,7 +587,7 @@ Run a query to get all records from the table corresponding to the monitored top
 
 [source,sh]
 ----
-psql -U postgresuser inventory -c 'select * from "Hike"'
+psql -U postgresuser inventory -c 'select * from "EventrOrder"'
 ----
 
 As you alter records in the source web application,
@@ -572,7 +606,7 @@ exit
 The beauty of using Apache Kafka for streaming change events is its flexibility.
 As the topics are persistent, additional consumers can come up which have not been known when data changes originally occurred.
 
-As an example, lets stream the `Hike` events to Elasticsearch now, too, making them available to the powerful fulltext search capabilities.
+As an example, lets stream the `EvntrOrder` events to Elasticsearch now, too, making them available to the powerful fulltext search capabilities.
 
 TODO: must be run upfront on the host, should go into general set-up
 
@@ -627,7 +661,7 @@ it's time to register an instance of the Elasticsearch sink connector:
 
 [source]
 ----
-$ oc exec -i my-cluster-kafka-0 -- curl -X POST -w "\n" \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -X POST -s -w "\n" \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors -d @- <<'EOF'
@@ -636,12 +670,12 @@ $ oc exec -i my-cluster-kafka-0 -- curl -X POST -w "\n" \
     "config": {
         "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
         "tasks.max": "1",
-        "topics": "Hike",
+        "topics": "EventrOrder",
         "connection.url": "http://elasticsearch:9200",
         "key.ignore": "false",
-        "type.name": "hike",
+        "type.name": "order",
         "behavior.on.null.values" : "delete",
-        "topic.index.map" : "Hike:hike",
+        "topic.index.map" : "EventrOrder:eventrorder",
         "transforms": "unwrap,key",
         "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
         "transforms.key.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
@@ -651,8 +685,8 @@ $ oc exec -i my-cluster-kafka-0 -- curl -X POST -w "\n" \
 EOF
 ----
 
-This listens to the `dbserver1.inventory.Hike` topic and pushes corresponding index updates to Elasticsearch.
-As index names must be lower-cased, the topic is named to the "hike" index name.
+This listens to the `EventrOrder` topic and pushes corresponding index updates to Elasticsearch.
+As index names must be lower-cased, the topic is named to the "eventrorder" index name.
 The `UnwrapFromEnvelope` transformation is used to extract only the "after" state from Debezium's change events.
 Using the `ExtractField` transformation we make sure that the original record id is used as the document id in Elasticsearch.
 
@@ -665,11 +699,11 @@ $ oc get routes elasticsearch -o=jsonpath='{.spec.host}{"\n"}'
 
 Open that URL in a browser, it should be in the form http://elasticsearch-voxxed.<YOUR SERVER IP>.nip.io/.
 
-To browse the contents of the `hike` index, go to http://elasticsearch-voxxed.<YOUR SERVER IP>.nip.io/hike/_search?pretty.
+To browse the contents of the `eventrorder` index, go to http://elasticsearch-voxxed.<YOUR SERVER IP>.nip.io/eventrorder/_search?pretty.
 Alternatively, you can use curl to do so:
 
 [source]
-$ oc exec -i my-cluster-kafka-0 -- curl -s -X GET "elasticsearch:9200/hike/_search?pretty"
+$ oc exec -i my-cluster-kafka-0 -- curl -s -X GET "elasticsearch:9200/eventrorder/_search?pretty"
 
 ==== Streaming Aggregate Events To Elasticsearch
 
@@ -705,13 +739,13 @@ register another instance of the Debezium MySQL connector:
 
 [source,sh]
 ----
-$ oc exec -i my-cluster-kafka-0 -- curl -s -X POST -w "\n" \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -s -X POST -w "\n" \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors -d @- <<'EOF'
 
 {
-    "name": "hike-complete-connector",
+    "name": "aggregates-connector",
     "config": {
         "connector.class": "io.debezium.connector.mysql.MySqlConnector",
         "tasks.max": "1",
@@ -720,11 +754,11 @@ $ oc exec -i my-cluster-kafka-0 -- curl -s -X POST -w "\n" \
         "database.user": "debezium",
         "database.password": "dbz",
         "database.server.id": "184055",
-        "database.server.name": "dbserver1_hike_complete",
+        "database.server.name": "dbserver1_aggregates",
         "database.whitelist": "inventory",
         "table.whitelist": "inventory\\.aggregates",
         "database.history.kafka.bootstrap.servers": "my-cluster-kafka-bootstrap:9092",
-        "database.history.kafka.topic": "schema-changes.inventory_hike_complete",
+        "database.history.kafka.topic": "schema-changes.inventory_aggregates",
         "transforms" : "expandjson",
         "transforms.expandjson.type": "io.debezium.aggregation.smt.ExpandJsonSmt"
     }
@@ -737,30 +771,30 @@ After the connector has been deployed, create a few records in the example appli
 
 [source,sh]
 ----
-oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+oc exec -c kafka -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --bootstrap-server my-cluster-kafka-bootstrap:9092 \
    --from-beginning \
    --property print.key=true \
-   --topic hike_complete
+   --topic orders_with_event
 ----
 
 Let's deploy another instance of the Elasticsearch sink connector for streaming the aggregate events into Elasticsearch:
 
 [source,sh]
 ----
-$ oc exec -i my-cluster-kafka-0 -- curl -X POST -w "\n" \
+$ oc exec -c kafka -i my-cluster-kafka-0 -- curl -X POST -w "\n" \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect-api:8083/connectors -d @- <<'EOF'
 {
-    "name": "hikes-complete-sink",
+    "name": "orders-with-event-sink",
     "config": {
         "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
         "tasks.max": "1",
-        "topics": "hike_complete",
+        "topics": "orders_with_event",
         "connection.url": "http://elasticsearch:9200",
         "key.ignore": "false",
-        "type.name": "hike_complete",
+        "type.name": "orders_with_event",
         "behavior.on.null.values" : "delete",
         "transforms": "unwrap,key",
         "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
@@ -771,11 +805,11 @@ $ oc exec -i my-cluster-kafka-0 -- curl -X POST -w "\n" \
 EOF
 ----
 
-To browse the contents of the `hike_complete` index, go to http://elasticsearch-voxxed.<YOUR SERVER IP>.nip.io/hike_complete/_search?pretty.
+To browse the contents of the `orders_with_event` index, go to http://elasticsearch-voxxed.<YOUR SERVER IP>.nip.io/orders_with_event/_search?pretty.
 Alternatively, you can use curl to do so:
 
 [source]
-$ oc exec -i my-cluster-kafka-0 -- curl -s -X GET "elasticsearch:9200/hike_complete/_search?pretty"
+$ oc exec -i my-cluster-kafka-0 -- curl -s -X GET "elasticsearch:9200/orders_with_event/_search?pretty"
 
 Having the complete aggregate within a single index allows for efficient queries based on all the properties of the aggregate,
 no matter in which table they are stored within the source database.
