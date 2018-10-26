@@ -163,10 +163,22 @@ template.template.openshift.io "strimzi-persistent" created
 Now you can deploy a Kafka cluster.
 For this lab, we will use a template (so to bootstrap only a single ZooKeeper node),
 but you could create a resource file from scratch as well or use one from _examples/kafka_.
-We will deploy 3 instances of Kafka broker (the default) and one instance of ZooKeeper.
+We will deploy 3 instances of Kafka broker (the default) and one instance of ZooKeeper by applying the "strimzi-persistent" template.
+
+The deployed Kafka broker instances and the ZooKeeper are by default configured to use all available memory provided by the environment.
+This is usually undesirable so we will set OpenShift limits to them so each of the pods will receive only allocated portion of memory which is 1 GB in case of each broker instance and 512 MB in case of ZooKeeper.
+The CPU pressure is not so important in our case so we will keep it unlimited.
+This is done via `oc patch` the newly set up cluster resource.
+Here are the two commands:
 
 [source, sh]
-$ oc process strimzi-persistent -p ZOOKEEPER_NODE_COUNT=1 -p KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 -p KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1 | oc apply -f -
+$ oc process strimzi-persistent \
+    -p ZOOKEEPER_NODE_COUNT=1 \
+    -p KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+    -p KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1 \
+    | oc apply -f - && \
+    oc patch kafka my-cluster --type merge -p '{ "spec" : { "zookeeper" : { "resources" : { "limits" : { "memory" : "512Mi" }, "requests" : { "memory" : "512Mi" } } },  "kafka" : { "resources" : { "limits" : { "memory" : "1Gi" }, "requests" : { "memory" : "1Gi" } } } } }'
+
 kafka "my-cluster" created
 
 Let's take a look at the resource we've created:
@@ -244,18 +256,6 @@ In addition to the `cluster operator` created previously, notice a few more depl
 * three Kafka brokers
 
 Also, notice that the Zookeeper ensemble and the Kafka cluster are deployed as stateful sets.
-
-=== Resource limits
-The deployed Kafka broker instances and the ZooKeeper are by default configured to use all available memory provided by the environment.
-This is usually undesirable so we will set OpenShift limits to them so each of the pods will receive only allocated portion of memory which is 1 GB in case of each broker instance and 512 MB in case of ZooKeeper.
-The CPU pressure is not so important in our case so we will keep it unlimited.
-
-To limit the RAM we need to configure the Kafka resource we have seen above using the patch command:
-
-[source,sh]
-$ oc patch kafka my-cluster --type merge -p '{ "spec" : { "zookeeper" : { "resources" : { "limits" : { "memory" : "512Mi" }, "requests" : { "memory" : "512Mi" } } },  "kafka" : { "resources" : { "limits" : { "memory" : "1Gi" }, "requests" : { "memory" : "1Gi" } } } } }'
-
-This will restart all broker nodes, again use `oc get pods -w` to verify that they are all up again.
 
 === Monitoring with Prometheus and Grafana
 
@@ -418,6 +418,14 @@ Spec:
   Partitions:         1
   Replicas:           1
 Events:               <none>
+
+If you don't see the topic or the last command yield an event stating "Failure processing KafkaTopic watch event ADDED",
+then the topic operator may have lost the connection to the ZooKeeper node.
+That's a known issue in the operator which should be fixed soon.
+For now you can work around this by deleting the entity operator pod (in which case OpenShift will restart a new instance):
+
+[source,sh]
+$ oc delete $(oc get pods -o name -l strimzi.io/name=my-cluster-entity-operator)
 
 Let's increase the partitions number now:
 
