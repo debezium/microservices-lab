@@ -85,15 +85,6 @@ eventrapp-1-m4rss                             1/1       Running     0          3
 mysql-2-gk8nw                                 1/1       Running     0          2m
 ...
 
-To improve execution time for subsequent builds (e.g. after code changes to the application),
-you can make the build an https://access.redhat.com/documentation/en-us/openshift_container_platform/3.9/html/developer_guide/builds#source-to-image-strategy-options[incremental S2I build], in which case the previously fetched dependencies would be re-used):
-
-[source,sh]
-----
-$ oc patch bc/eventrapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
-buildconfig "eventrapp" patched
-----
-
 The hostname of the exposed eventrapp service is available in the OpenShift console, or can be retrieved via CLI:
 
 [source]
@@ -887,9 +878,6 @@ $ oc new-app --name=cdc-consumer-app debezium/msa-lab-s2i:latest~https://github.
     -e KAFKA_SERVICE_PORT=9092 \
     -e JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true \
     -e ORDER_TOPIC_NAME=EventrOrder
-
-# Make subsequent builds of the application executing faster
-$ oc patch bc/cdc-consumer-app -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
 
 # Expose port 8080
 $ oc patch service cdc-consumer-app -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
