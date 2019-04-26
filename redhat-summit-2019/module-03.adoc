@@ -21,7 +21,7 @@ In this module of the lab you'll learn the following things:
 
 The overall architecture of this lab module looks like this:
 
-image::debezium-demo.png[Module 3 Architecture Overview]
+image::debezium-demo.png[Module 3 Architecture Overview,width=800,height=421]
 
 === Setting Up the Example Application
 
@@ -547,7 +547,7 @@ as your preference.
 ==== Streaming Data Changes to a PostgreSQL Sink Database
 
 To stream data changes into another database, no manual programming effort is needed.
-Instead, the Confluent JDBC sink connector for Kafka Connect can be used to data into a target database.
+Instead, the Confluent JDBC sink connector for Kafka Connect can be used to stream data into a target database.
 
 So let's set up another database (PostgreSQL in this case) and stream the data changes there.
 
