@@ -14,7 +14,7 @@ The services are based on http://quarkus.io/[Quarkus], a "Kubernetes Native Java
 === The Order Service
 
 The order service receives purchase orders (for event tickets) via a REST API.
-It persists these orders in a MySQL database.
+It persists these orders in a Postgres database.
 
 Now it should also emit a message for each placed order to Kafka.
 For doing so, we're going to use the https://github.com/smallrye/smallrye-reactive-messaging[SmallRye Reactive Messaging API], which is an implementation of the https://github.com/eclipse/microprofile-reactive-messaging[MicroProfile Reactive Messaging API specification].
@@ -53,7 +53,7 @@ public class OrderService {
 This code:
 
 * Provides a REST endpoint for placing new purchase orders via JAX-RS
-* Uses the Java Persistence API (JPA) to store the new orders in the MySQL database
+* Uses the Java Persistence API (JPA) to store the new orders in the Postgres database
 * Emits a Kafka message representing the new order
 
 The `Emitter` instance `orderStream` is particularly interesting:
