@@ -21,10 +21,10 @@ It builds upon the basic Kubernetes resource and operator concepts but includes 
 
 Instead of relying on direct deployment and management of ZooKeeper and Kafka clusters, Strimzi consists of a couple of these domain-specific operators that monitor the state of the cluster, making adjustments in accordance to a desired state read from dedicated configuration resources.
 
-For creating an Apache Kafka cluster, for instance, you need to create a resource of type `kafka` that describes the properties of the cluster, and the *_cluster operator_* will deploy the cluster for you.
+For creating an Apache Kafka cluster, for instance, you need to create a resource of type `Kafka` that describes the properties of the cluster, and the *_cluster operator_* will deploy the cluster for you.
 If you need to change the state of the cluster, for example for changing properties or for adding new instances, all you have to do is to modify the resource and the changes will be rolled out accordingly.
 
-Topic management works in a similar fashion: for creating and modifying topics, you only need to create and edit a set of resources of type `kafkatopic` and the *_topic operator_* will do the work for you.
+Topic management works in a similar fashion: for creating and modifying topics, you only need to create and edit a set of resources of type `KafkaTopic` and the *_topic operator_* will do the work for you.
 
 You will do all this as part of the first lab.
 
@@ -242,7 +242,7 @@ strimzi-cluster-operator-696658566-9bttk            1/1       Running   0       
 In addition to the `cluster operator` created previously, notice a few more deployments:
 
 * the `entity operator` is now deployed as well - you can deploy it independently, but the Strimzi template deploys it out of the box; it is used to manage topics and/or users of Kafka
-* one ZooKeeper node
+* three ZooKeeper node
 * three Kafka brokers
 
 Also, notice that the ZooKeeper ensemble and the Kafka cluster are deployed as stateful sets.
