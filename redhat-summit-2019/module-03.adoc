@@ -81,7 +81,7 @@ The hostname of the exposed eventrapp service is available in the OpenShift cons
 [source]
 $ oc get routes eventrapp -o=jsonpath='{.spec.host}{"\n"}'
 
-Note the output, which should be in the format eventrapp-amq-streams.apps-<YOUR GUID>.generic.opentlc.com and you can http://eventrapp-amq-streams.apps-<YOUR GUID>.generic.opentlc.com[navigate there] using a browser.
+Note the output, which should be in the format eventrapp-amq-streams.apps-<YOUR GUID>.generic.opentlc.com and you can navigate there using a browser.
 Alternatively, you could click on the application's URL within the OpenShift web UI.
 
 You can use "Populate Data" to create some example data (Click on "Search orders" after that to see the created entries).
