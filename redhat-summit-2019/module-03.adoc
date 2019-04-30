@@ -561,7 +561,8 @@ $ oc new-app \
 ----
 
 Once the database has started (use `oc get pods` to verify that PostgreSQL is running), register an instance of the https://docs.confluent.io/current/connect/kafka-connect-jdbc/sink-connector/index.html[Kafka Connect JDBC sink connector].
-This connector can be used to propagate Kafka messages to relational databases via JDBC:
+This connector can be used to propagate Kafka messages to relational databases via JDBC.
+Change to the tooling pod and submit the following request with httpie:
 
 [source]
 ----
