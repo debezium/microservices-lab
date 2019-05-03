@@ -421,12 +421,12 @@ With the connector being deployed, we can examine the contents of the Kafka topi
 
 [source,sh]
 ----
-kafkacat -b production-ready-kafka-bootstrap -t dbserver1.inventory.categories -C -o beginning | jq ."payload"
+stdbuf -o0 kafkacat -b production-ready-kafka-bootstrap -t dbserver1.inventory.categories -C -o beginning | jq ."payload"
 ----
 
 [source,sh]
 ----
-kafkacat -b production-ready-kafka-bootstrap -t dbserver1.inventory.orders -C -o end | jq ."payload"
+stdbuf -o0 kafkacat -b production-ready-kafka-bootstrap -t dbserver1.inventory.orders -C -o end | jq ."payload"
 ----
 
 The former doesn't show any activity, there are just the events from the initial snapshot of the categories table.
